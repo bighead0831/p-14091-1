@@ -6,7 +6,7 @@ plugins {
 
 group = "com"
 version = "0.0.1-SNAPSHOT"
-description = "p-14091-1"
+description = "p-14164-1"
 
 java {
     toolchain {
@@ -32,6 +32,7 @@ dependencies {
     testCompileOnly("org.projectlombok:lombok")
     testRuntimeOnly("org.junit.platform:junit-platform-launcher")
     testAnnotationProcessor("org.projectlombok:lombok")
+    implementation("org.commonmark:commonmark:0.28.0")
 }
 
 tasks.withType<Test> {

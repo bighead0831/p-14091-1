@@ -25,7 +25,7 @@ public class AppConfig {
     }
 
     @Bean
-    ApplicationRunner baseInitDataApplicationRunner() {
+    ApplicationRunner makeSampleMemberDataApplicationRunner() {
         return args -> {
             self.work1();
             self.work2();

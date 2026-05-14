@@ -1,27 +1,22 @@
 package com.back.domain.wiseSaying.wiseSaying.controller;
 
 import com.back.domain.wiseSaying.wiseSaying.entity.WiseSaying;
+import com.back.domain.wiseSaying.wiseSaying.service.WiseSayingService;
+import com.back.standard.util.service.MarkdownService;
+import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.ResponseBody;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Optional;
 import java.util.stream.Collectors;
 
 @Controller
+@RequiredArgsConstructor
 public class WiseSayingController {
-    private int lastId = 0;
-    private final List<WiseSaying> wiseSayings = new ArrayList<>() {{
-        add(new WiseSaying(++lastId, "명언 1", "작가 1"));
-        add(new WiseSaying(++lastId, "명언 2", "작가 2"));
-        add(new WiseSaying(++lastId, "명언 3", "작가 3"));
-        add(new WiseSaying(++lastId, "명언 4", "작가 4"));
-        add(new WiseSaying(++lastId, "명언 5", "작가 5"));
-    }};
+    private final WiseSayingService wiseSayingService;
+    private final MarkdownService markdownService;
 
     @GetMapping("/wiseSayings/write")
     @ResponseBody
@@ -37,38 +32,40 @@ public class WiseSayingController {
             throw new IllegalArgumentException("Author cannot be null or blank");
         }
 
-        int id = ++lastId;
+        WiseSaying wiseSaying = wiseSayingService.write(content, author);
 
-        WiseSaying wiseSaying = new WiseSaying(id, content, author);
-
-        wiseSayings.add(wiseSaying);
-
-        return "%d번 명언이 생성되었습니다.".formatted(id);
+        return "%d번 명언이 생성되었습니다.".formatted(wiseSaying.getId());
     }
 
     @GetMapping("/wiseSayings")
     @ResponseBody
     public String list() {
-        return "<ul>"
-                + wiseSayings
-                .stream()
-                .map(wiseSaying ->
-                        "<li>%d / %s / %s</li>".formatted(wiseSaying.getId(), wiseSaying.getAuthor(), wiseSaying.getContent())
-                )
-                .collect(Collectors.joining(""))
-                + "</ul>";
+        return "<h1>명언 목록</h1>\n"
+                +
+                "<ul>"
+                +
+                wiseSayingService.findAll()
+                        .stream()
+                        .map(wiseSaying -> "<li>%d / %s / %s</li>".formatted(wiseSaying.getId(), wiseSaying.getAuthor(), wiseSaying.getContent()))
+                        .collect(Collectors.joining("\n"))
+                +
+                "</ul>";
     }
 
     @GetMapping("/wiseSayings/{id}")
     @ResponseBody
     public String detail(@PathVariable int id) {
-        WiseSaying wiseSaying = findById(id).get();
+        WiseSaying wiseSaying = wiseSayingService.findById(id).get();
+
+        String html = markdownService.toHtml(wiseSaying.getContent());
 
         return """
-                <h1>명언 : %s</h1>
+                <h1>명언 본문</h1>
+                
                 <div>번호 : %d</div>
                 <div>작가 : %s</div>
-                """.formatted(wiseSaying.getContent(), wiseSaying.getId(), wiseSaying.getAuthor());
+                <div>%s</div>
+                """.formatted(wiseSaying.getId(), wiseSaying.getAuthor(), html);
     }
 
     @GetMapping("/wiseSayings/{id}/delete")
@@ -76,12 +73,12 @@ public class WiseSayingController {
     public String delete(
             @PathVariable int id
     ) {
-        WiseSaying wiseSaying = findById(id)
+        WiseSaying wiseSaying = wiseSayingService.findById(id)
                 .orElseThrow(
                         () -> new IllegalArgumentException("%d번 명언은 존재하지 않습니다.".formatted(id))
                 );
 
-        wiseSayings.remove(wiseSaying);
+        wiseSayingService.delete(wiseSaying);
 
         return "%d번 명언이 삭제되었습니다.".formatted(id);
     }
@@ -101,20 +98,13 @@ public class WiseSayingController {
             throw new IllegalArgumentException("Author cannot be null or blank");
         }
 
-        WiseSaying wiseSaying = findById(id)
+        WiseSaying wiseSaying = wiseSayingService.findById(id)
                 .orElseThrow(
                         () -> new IllegalArgumentException("%d번 명언은 존재하지 않습니다.".formatted(id))
                 );
 
-        wiseSaying.modify(content, author);
+        wiseSayingService.modify(wiseSaying, content, author);
 
         return "%d번 명언이 수정되었습니다.".formatted(id);
-    }
-
-    private Optional<WiseSaying> findById(int id) {
-        return wiseSayings
-                .stream()
-                .filter(wiseSaying -> wiseSaying.getId() == id)
-                .findFirst();
     }
 }
