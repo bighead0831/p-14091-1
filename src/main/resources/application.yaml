@@ -3,6 +3,9 @@ spring:
     name: back
   profiles:
     active: dev
+  datasource:
+    hikari:
+      auto-commit: false
   output:
     ansi:
       enabled: always
